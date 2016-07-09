@@ -1,0 +1,6 @@
+cliff
+diskimage-builder>1.0
+libvirt-python
+netaddr
+six
+slugify

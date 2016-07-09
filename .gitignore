@@ -1,0 +1,6 @@
+.venv
+build/
+dist/
+os_sandbox.egg-info
+*.swp
+*.pyc

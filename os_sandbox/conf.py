@@ -1,0 +1,24 @@
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
+import os
+
+DEFAULT_LOG_FORMAT = "[%(levelname)7s] %(message)s"
+DEFAULT_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_STATE_DIR = '/opt/os-sandbox'
+
+
+def add_common_args(parser):
+    parser.add_argument('--state-dir',
+                        default=os.environ.get('OS_SANDBOX_STATE_DIR',
+                                               DEFAULT_STATE_DIR),
+                        help="The location where sandbox state is stored.")
