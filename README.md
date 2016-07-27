@@ -39,7 +39,8 @@ $VENV_DIR/bin/pip install os-sandbox
 Add an alias to your bash shell for `os-sandbox` like so:
 
 ```bash
-grep os-sandbox ~/.bash_aliases || echo "alias os-sandbox='$HOME/os-sandbox/.venv/bin/os-sandbox'" >> ~/.bash_aliases
+grep os-sandbox ~/.bash_aliases || \
+echo "alias os-sandbox='$HOME/os-sandbox/.venv/bin/os-sandbox'" >> ~/.bash_aliases
 ```
 
 ### Developing on `os-sandbox`
@@ -149,12 +150,12 @@ Name: multi-one-control
 Description: A set of 3 VMs with a single controller VM and two compute VMs.
 Networks:
   public (192.168.30.1/24)
-      private (192.168.20.1/24)
-      mgmt (192.168.10.1/24)
-    Nodes:
-      controller (controller)
-      compute1 (compute)
-      compute2 (compute)
+    private (192.168.20.1/24)
+    mgmt (192.168.10.1/24)
+Nodes:
+  controller (controller)
+  compute1 (compute)
+  compute2 (compute)
 ```
 
 ### Listing images
@@ -179,6 +180,18 @@ To view the sandboxes on the sandbox host, simple use `os-sandbox sandbox list`:
 os-sandbox sandbox list
 ```
 
+Example output:
+
+```
+$ os-sandbox sandbox list
++----------+----------+-------------------+
+| Sandbox  | Status   | Template          |
++----------+----------+-------------------+
+| test_sb  | STARTED  | multi-one-control |
+| test_aio | INACTIVE | all-in-one        |
++----------+----------+-------------------+
+```
+
 ### Showing details of a sandbox
 
 To show information about an existing sandbox, use the `os-sandbox sandbox show
@@ -189,7 +202,6 @@ os-sandbox sandbox show test_sb
 ```
 
 Example output:
-
 
 ```
 $ os-sandbox sandbox show test_aio
