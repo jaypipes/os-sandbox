@@ -184,12 +184,12 @@ Example output:
 
 ```
 $ os-sandbox sandbox list
-+----------+----------+-------------------+
-| Sandbox  | Status   | Template          |
-+----------+----------+-------------------+
-| test_sb  | STARTED  | multi-one-control |
-| test_aio | INACTIVE | all-in-one        |
-+----------+----------+-------------------+
++----------+-------------+-------------------+
+| Sandbox  | Status      | Template          |
++----------+-------------+-------------------+
+| test_sb  | Not started | multi-one-control |
+| test_aio | Not started | all-in-one        |
++----------+-------------+-------------------+
 ```
 
 ### Showing details of a sandbox
@@ -206,12 +206,12 @@ Example output:
 ```
 $ os-sandbox sandbox show test_aio
 Name: test_aio
-Status: STARTED
+Status: Started
 Template: all-in-one
 Networks:
-  test_aio-public (ACTIVE)
-  test_aio-private (ACTIVE)
-  test_aio-mgmt (ACTIVE)
+  test_aio-public (UP)
+  test_aio-private (UP)
+  test_aio-mgmt (UP)
 Nodes:
   aio (Running)
 ```

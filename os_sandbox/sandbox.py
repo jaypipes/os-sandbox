@@ -24,6 +24,11 @@ from os_sandbox import node
 
 class Sandbox(object):
 
+    STATUS_NO_NODES = 'No nodes defined'
+    STATUS_NOT_STARTED = 'Not started'
+    STATUS_ERROR = 'Error'
+    STATUS_STARTED = 'Started'
+
     def __init__(self, parsed_args, name):
         self.parsed_args = parsed_args
         self.name = name
@@ -106,15 +111,15 @@ class Sandbox(object):
     def status(self):
         """Queries libvirt to return the status of the environment's VMs"""
         if len(self.nodes) == 0:
-            status = 'NO NODES'
+            return Sandbox.STATUS_NO_NODES_DEFINED
         else:
-            status = 'NOT STARTED'
+            status = Sandbox.STATUS_NOT_STARTED
             
             guest_states = [n.status for n in self.nodes]
             if all(node.Node.STATUS_RUNNING == s for s in guest_states):
-                status = 'STARTED'
+                status = Sandbox.STATUS_STARTED
             elif node.Node.STATUS_ERROR in guest_states:
-                status = 'ERROR'
+                status = Sandbox.STATUS_ERROR
         return status
 
     def start(self):

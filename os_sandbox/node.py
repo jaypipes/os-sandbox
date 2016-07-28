@@ -43,9 +43,12 @@ libvirt.registerErrorHandler(f=libvirt_callback, ctx=None)
 
 class Node(object):
 
+    LOG = logging.getLogger(__name__)
+
     STATUS_UNDEFINED = 'Undefined'
     STATUS_RUNNING = 'Running'
     STATUS_ERROR = 'Error'
+    STATUS_NOT_STARTED = 'Not started'
 
     def __init__(self, sandbox, name):
         self.sandbox = sandbox
@@ -168,7 +171,17 @@ class Node(object):
         try:
             dom = self._get_domain()
             return _libvirt_domain_state_code_map[dom.info()[0]]
-        except:
+        except libvirt.libvirtError as err:
+            err_code = err.get_error_code()
+            if err_code == libvirt.VIR_ERR_NO_DOMAIN:
+                # The domains for sandbox nodes are temporal, so there's
+                # no real mapping of "no domain found" other than the
+                # node should be considered not started.
+                return Node.STATUS_NOT_STARTED
+            else:
+                return Node.STATUS_ERROR
+        except Exception as err:
+            self.LOG.error(err)
             return Node.STATUS_ERROR
 
     def start(self):
