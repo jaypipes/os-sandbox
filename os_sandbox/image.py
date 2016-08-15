@@ -61,6 +61,9 @@ class Image(object):
             '--image-size=%d' % image_size_gb,
             distro,
             'vm',
+            'cloud-init-nocloud',  # Avoid delay polling for EC2 metadata
+            'pip-and-virtualenv',
+            'local-config',  # Inject the local user's SSH keys
         ]
         p = subprocess.Popen(args,
                              stdout=subprocess.PIPE,

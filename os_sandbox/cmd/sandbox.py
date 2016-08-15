@@ -35,12 +35,8 @@ class SandboxList(lister.Lister):
 
     def take_action(self, parsed_args):
         sandboxes = []
-        state_dir = helpers.ensure_state_dir(parsed_args)
-        sb_dir = os.path.join(state_dir, 'sandboxes')
-        for entry in os.listdir(sb_dir):
-            sb_entry = os.path.join(sb_dir, entry)
-            if os.path.isdir(sb_entry):
-                sandboxes.append(sandbox.Sandbox(parsed_args, entry))
+        helpers.ensure_state_dir(parsed_args)
+        sandboxes = sandbox.Sandboxes(parsed_args)
         return (
             ('Sandbox', 'Status', 'Template'),
             (
@@ -78,14 +74,15 @@ class SandboxShow(command.Command):
         self.app.stdout.write('Status: ' + sb.status + '\n')
         self.app.stdout.write('Template: ' + sb.template.name + '\n')
         self.app.stdout.write('Networks:\n')
+        line = "  {:<18} {:<14} {:<10}\n"
         for net in sb.networks:
-            active_str = 'ACTIVE'
-            if not net.started():
-                active_str = 'INACTIVE'
-            self.app.stdout.write('  ' + net.name + ' (' + active_str + ')\n')
+            net_line = line.format(net.name, net.status, net.cidr)
+            self.app.stdout.write(net_line)
         self.app.stdout.write('Nodes:\n')
         for node in sb.nodes:
-            self.app.stdout.write('  ' + node.name + ' (' + node.status + ')\n')
+            services_str = ",".join(node.services)
+            node_line = line.format(node.name, node.status, services_str)
+            self.app.stdout.write(node_line)
 
 
 class SandboxCreate(command.Command):
@@ -126,13 +123,25 @@ class SandboxDelete(command.Command):
         parser = super(SandboxDelete, self).get_parser(prog_name)
         conf.add_common_args(parser)
         parser.add_argument('name', help='Name of the sandbox to delete')
+        parser.add_argument('-f', '--force', action="store_true",
+                            default=False,
+                            help="Force the deletion of the sandbox, ignoring "
+                                 "any errors that may have been encountered "
+                                 "in trying to shut down the sandbox.")
         return parser
 
     def take_action(self, parsed_args):
         state_dir = helpers.ensure_state_dir(parsed_args)
 
         sb_name = parsed_args.name
-        sb = sandbox.Sandbox(parsed_args, sb_name)
+        try:
+            sb = sandbox.Sandbox(parsed_args, sb_name)
+        except Exception:
+            if parsed_args.force:
+                sandbox.Sandbox.force_delete(sb_name)
+            else:
+                raise
+
         if not sb.exists():
             msg = "A sandbox with name {0} does not exist.".format(sb_name)
             raise RuntimeError(msg)

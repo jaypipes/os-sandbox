@@ -22,11 +22,18 @@ from os_sandbox import helpers
 
 class Network(object):
 
+    LOG = logging.getLogger(__name__)
+
+    STATUS_UP = 'UP'
+    STATUS_DOWN = 'DOWN'
+    STATUS_ERROR = 'ERROR'
+
     def __init__(self, sandbox, name, cidr):
         self.sandbox = sandbox
-        self.name = sandbox.name + '-' + name
+        self.name = name
         self.slug = slugify.slugify(helpers.utf8_bytes(self.name))
         self.cidr = cidr
+        self.error = None
         self.ip_net = netaddr.IPNetwork(cidr)
         self.gateway_ip_address = str(self.ip_net.ip)
         self.dhcp_ip_address_start = str(self.ip_net[1])
@@ -67,15 +74,28 @@ class Network(object):
 """.format(**conf)
         return xml_text
 
-    def started(self):
+    @property
+    def status(self):
+        if self.error is not None:
+            return Network.STATUS_ERROR
         try:
             net = self._get_libvirt_net()
-            return net.isActive() 
-        except:
-            return False
+            if net.isActive() :
+                return Network.STATUS_UP
+            else:
+                return Network.STATUS_DOWN
+        except libvirt.libvirtError as err:
+            err_code = err.get_error_code()
+            if err_code == libvirt.VIR_ERR_NO_NETWORK:
+                # The networks for sandboxes are temporal, so there's
+                # no real mapping of "no network found" other than the
+                # network should be considered not "up".
+                return Network.STATUS_DOWN
+            self.error = err
+            return Network.STATUS_ERROR
 
     def start(self):
-        if self.started():
+        if self.status == Network.STATUS_UP:
             return
 
         conn = self._get_conn(readonly=False)
@@ -83,6 +103,7 @@ class Network(object):
         if net == None:
             msg = "Failed to start network {0}"
             msg = msg.format(self.name)
+            self.error = msg
             raise RuntimeError(msg)
         conn.close()
 
@@ -93,6 +114,7 @@ class Network(object):
         except libvirt.libvirtError as err:
             if err.get_error_code() == libvirt.VIR_ERR_NO_NETWORK:
                 return
+            self.error = err
         if net == None:
             msg = "Failed to stop network {0}"
             msg = msg.format(self.name)

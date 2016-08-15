@@ -35,15 +35,13 @@ class Template(object):
         self.conf = yaml.load(open(self.conf_path, 'rb').read())
         self.full_name = self.conf['full_name']
         self.description = self.conf['description']
-        self.networks = self.conf['networks']
         self.nodes = self.conf['nodes']
 
     def exists(self):
         """Returns True if the named template exists, False otherwise."""
         return os.path.exists(self.conf_path)
 
-    def create(self, full_name=None, description=None, networks=None,
-               nodes=None):
+    def create(self, full_name=None, description=None, nodes=None):
         """Creates a new template."""
         if self.exists():
             msg = "A template with name {0} already exists.".format(self.name)
@@ -52,11 +50,9 @@ class Template(object):
         full_name = full_name or self.name
         nodes = nodes or []
         description = description or self.name
-        networks = networks or {}
         conf = {
             'full_name': full_name,
             'description': description,
-            'networks': networks,
             'nodes': nodes,
         }
         os.mkdir(self.template_dir, 0755)

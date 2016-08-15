@@ -92,7 +92,7 @@ def create_writeable_dir(path):
     except OSError as e:
         if e.errno in (errno.EACCES, errno.EPERM):
             # Need to sudo this up and try again
-            args = ('sudo', 'mkdir', '--mode=755', path)
+            args = ('sudo', 'mkdir', path)
             subprocess.check_call(args)
             st = os.stat(path)
             owner_uid = os.getuid()
@@ -100,6 +100,7 @@ def create_writeable_dir(path):
             args = ('sudo', 'chown', '-R',
                     '%d:%d' % (owner_uid, group_gid), path)
             subprocess.check_call(args)
+            set_writeable(path)
             
 
 def ensure_state_dir(parsed_args):

@@ -135,17 +135,6 @@ class Setup(command.Command):
                 'full_name': 'All-in-one',
                 'description': "A single VM housing all OpenStack and "
                                "infrastructure services.",
-                'networks': {
-                    'mgmt': {
-                        'cidr': '192.168.10.1/24',
-                    },
-                    'private': {
-                        'cidr': '192.168.20.1/24',
-                    },
-                    'public': {
-                        'cidr': '192.168.30.1/24',
-                    },
-                },
                 'nodes': [
                     {
                         'image': 'ubuntu',
@@ -167,17 +156,6 @@ class Setup(command.Command):
                 'full_name': 'Multi-node, Single controller',
                 'description': "A set of 3 VMs with a single controller VM "
                                "and two compute VMs.",
-                'networks': {
-                    'mgmt': {
-                        'cidr': '192.168.10.1/24',
-                    },
-                    'private': {
-                        'cidr': '192.168.20.1/24',
-                    },
-                    'public': {
-                        'cidr': '192.168.30.1/24',
-                    },
-                },
                 'nodes': [
                     {
                         'image': 'ubuntu',

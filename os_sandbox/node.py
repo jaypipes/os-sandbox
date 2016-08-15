@@ -23,17 +23,6 @@ from os_sandbox import helpers
 from os_sandbox import image
 from os_sandbox import template
 
-_libvirt_domain_state_code_map = {
-    libvirt.VIR_DOMAIN_NOSTATE: 'No state',
-    libvirt.VIR_DOMAIN_RUNNING: 'Running',
-    libvirt.VIR_DOMAIN_BLOCKED: 'Blocked',
-    libvirt.VIR_DOMAIN_PAUSED: 'Paused',
-    libvirt.VIR_DOMAIN_SHUTDOWN: 'Shutdown',
-    libvirt.VIR_DOMAIN_SHUTOFF: 'Shut off',
-    libvirt.VIR_DOMAIN_CRASHED: 'Crashed',
-    libvirt.VIR_DOMAIN_PMSUSPENDED: 'Suspended',
-}
-
 def libvirt_callback(ignore, err):
     if err[3] != libvirt.VIR_ERR_ERROR:
           # Don't log libvirt errors: global error handler will do that
@@ -45,27 +34,32 @@ class Node(object):
 
     LOG = logging.getLogger(__name__)
 
-    STATUS_UNDEFINED = 'Undefined'
-    STATUS_RUNNING = 'Running'
-    STATUS_ERROR = 'Error'
-    STATUS_NOT_STARTED = 'Not started'
+    STATUS_UNDEFINED = 'UNDEFINED'
+    STATUS_UP = 'UP'
+    STATUS_ERROR = 'ERROR'
+    STATUS_DOWN = 'DOWN'
 
     def __init__(self, sandbox, name):
         self.sandbox = sandbox
         self.parsed_args = sandbox.parsed_args
         self.name = name
+        self.error = None
         self.node_dir = os.path.join(sandbox.nodes_dir,
                                      self.name)
         self.conf_path = os.path.join(self.node_dir,
                                       'config.yaml')
 
         if os.path.exists(self.conf_path):
-            self._fill()
+            try:
+                self._fill()
+            except Exception as err:
+                self.error = err
 
     def _fill(self):
         conf = yaml.load(open(self.conf_path, 'rb'))
         self.uuid = conf['uuid']
         self.resources = conf['resources']
+        self.services = conf['services']
         self.image = image.Image(self.parsed_args, conf['image'])
 
     def _get_conn(self, readonly=True):
@@ -98,6 +92,7 @@ class Node(object):
             'name': self.name,
             'image': self.image.name,
             'resources': self.resources,
+            'services': self.services,
         }
 
     def create(self, node_conf):
@@ -111,6 +106,7 @@ class Node(object):
         os.mkdir(self.node_dir, 0755)
 
         self.resources = node_conf['resources']
+        self.services = node_conf['services']
         self.image = image.Image(self.parsed_args,
                                  node_conf['image'])
         self.uuid = uuid.uuid4().hex
@@ -151,7 +147,9 @@ class Node(object):
             <source file='{image_path}'/>
             <target dev='hda'/>
         </disk>
-        {net_xml}
+        <interface type='network'>
+            <source network='default'/>
+        </interface>
         <serial type='pty'>
             <target port='0'/>
         </serial>
@@ -166,18 +164,30 @@ class Node(object):
     @property
     def status(self):
         """Queries libvirt to return the status of the environment's VMs"""
+        if self.error is not None:
+            return Node.STATUS_ERROR
         if not self.exists():
             return Node.STATUS_UNDEFINED
+        state_code_map = {
+            libvirt.VIR_DOMAIN_NOSTATE: Node.STATUS_UNDEFINED,
+            libvirt.VIR_DOMAIN_RUNNING: Node.STATUS_UP,
+            libvirt.VIR_DOMAIN_BLOCKED: Node.STATUS_UP,
+            libvirt.VIR_DOMAIN_PAUSED: Node.STATUS_UP,
+            libvirt.VIR_DOMAIN_SHUTDOWN: Node.STATUS_DOWN,
+            libvirt.VIR_DOMAIN_SHUTOFF: Node.STATUS_DOWN,
+            libvirt.VIR_DOMAIN_CRASHED: Node.STATUS_ERROR,
+            libvirt.VIR_DOMAIN_PMSUSPENDED: Node.STATUS_DOWN,
+        }
         try:
             dom = self._get_domain()
-            return _libvirt_domain_state_code_map[dom.info()[0]]
+            return state_code_map[dom.info()[0]]
         except libvirt.libvirtError as err:
             err_code = err.get_error_code()
             if err_code == libvirt.VIR_ERR_NO_DOMAIN:
                 # The domains for sandbox nodes are temporal, so there's
                 # no real mapping of "no domain found" other than the
                 # node should be considered not started.
-                return Node.STATUS_NOT_STARTED
+                return Node.STATUS_DOWN
             else:
                 return Node.STATUS_ERROR
         except Exception as err:
